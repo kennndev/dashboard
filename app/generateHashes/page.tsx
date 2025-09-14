@@ -304,33 +304,43 @@ return (
                   </div>
                 </div>
 
-                {/* Pass Codes */}
-                <div className="space-y-4 group">
-                  <label className="text-lg font-semibold text-gray-700 flex items-center space-x-3">
-                    <span className="w-3 h-3 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"></span>
-                    <span>Pass Codes (one per line)</span>
-                  </label>
-                  <textarea
-                    className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 transition-all duration-300 bg-white/50 backdrop-blur-sm hover:bg-white group-hover:border-violet-300 font-mono"
-                    rows={8}
-                    value={passes}
-                    onChange={(e) => setPasses(e.target.value)}
-                    placeholder="PASS001&#10;PASS002&#10;PASS003&#10;..."
-                  />
-                </div>
+                {/* Generated Codes Display */}
+                {generatedCodes.length > 0 && (
+                  <div className="space-y-4 group">
+                    <label className="text-lg font-semibold text-gray-700 flex items-center space-x-3">
+                      <span className="w-3 h-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"></span>
+                      <span>Auto-Generated Codes</span>
+                    </label>
+                    <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200/50 rounded-2xl backdrop-blur-sm">
+                      <p className="text-emerald-800 font-semibold mb-2">
+                        ✅ {generatedCodes.length} codes generated automatically
+                      </p>
+                      <div className="space-y-1">
+                        {generatedCodes.slice(0, 3).map((code, i) => (
+                          <div key={i} className="text-sm font-mono bg-white/60 px-2 py-1 rounded border">
+                            {code}
+                          </div>
+                        ))}
+                        {generatedCodes.length > 3 && (
+                          <p className="text-xs text-emerald-600">... and {generatedCodes.length - 3} more</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Generate Button */}
               <div className="text-center">
                 <button
-                  onClick={handleGenerate}
-                  disabled={!images.length || !passes.trim() || !selectedAddress}
+                  onClick={handleAutomatedProcess}
+                  disabled={!images.length || !selectedAddress || isProcessing}
                   className="px-12 py-5 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white rounded-2xl font-bold text-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-violet-500 hover:via-purple-500 hover:to-fuchsia-500 transition-all duration-300 shadow-xl shadow-violet-500/25 hover:shadow-2xl hover:shadow-violet-500/40 transform hover:-translate-y-1 relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10 flex items-center justify-center space-x-3">
-                    <span>🚀</span>
-                    <span>Generate & Upload</span>
+                    <span>{isProcessing ? "⏳" : "🚀"}</span>
+                    <span>{isProcessing ? "Processing..." : "Generate & Upload"}</span>
                     <span>✨</span>
                   </span>
                 </button>
