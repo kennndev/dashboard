@@ -256,6 +256,12 @@ function DeployForm({ onDeployed }: { onDeployed: (hash: string) => void }) {
         })
         const cid: string = metaRes.data.IpfsHash
 
+        // Generate hashes
+        setProcessingStatus("🔐 Generating hashes...")
+        const hashes = generatedCodes.map((code, i) =>
+          keccak256(encodePacked(['string', 'string'], [code, `ipfs://${cid}/metadata/${i}.json`])),
+        )
+
         // Save collection with CID and codes
         await fetch(`/api/collections/${collectionAddress.toLowerCase()}`, {
           method: 'PUT',
@@ -283,7 +289,6 @@ function DeployForm({ onDeployed }: { onDeployed: (hash: string) => void }) {
           body: JSON.stringify({ codes: codesData }),
         })
 
-        // Generate hashes (already done above)
         setProcessingStatus("🔐 Hashes generated and saved...")
 
         // Add hashes to contract
