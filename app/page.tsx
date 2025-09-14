@@ -520,12 +520,10 @@ function CollectionRow({ addr, viewer }: CollectionRowProps) {
   const { data: owner } = useReadContract({ address: addr, abi: nftAbi, functionName: "owner" })
 
   const isOwner = owner?.toLowerCase() === viewer.toLowerCase()
-  const [pushing, setPushing] = useState(false)
-  const [open, setOpen] = useState(false)
-  const [pairsInput, setPairsInput] = useState("")
   const [copied, setCopied] = useState(false)
   const [collectionInfo, setCollectionInfo] = useState<{cid: string, codes: string[], hashes: string[], total_nfts: number} | null>(null)
   const [showCodes, setShowCodes] = useState(false)
+  const [showAllCodes, setShowAllCodes] = useState(false)
 
 
   const { writeContractAsync, isPending } = useWriteContract()
@@ -608,38 +606,6 @@ function CollectionRow({ addr, viewer }: CollectionRowProps) {
     }
   }
 
-  async function handleAddHashes() {
-    try {
-      const raw = pairsInput.trim()
-      const list: string[] = raw.startsWith("[")
-        ? JSON.parse(raw).map((h: string) => h.trim())
-        : raw
-            .split("\n")
-            .map((l) => l.trim())
-            .filter(Boolean)
-
-      const hashes = list.map((item) => {
-        const cleaned = item.replace(/^[,"[\]\s]+|[,"[\]\s]+$/g, "").toLowerCase()
-        if (cleaned.startsWith("0x") && cleaned.length === 66) return cleaned as `0x${string}`
-        const [code, uri] = item.split(",").map((s) => s.trim())
-        if (!code || !uri) throw new Error(`Bad line: "${item}"`)
-        return keccak256(encodePacked(["string", "string"], [code, uri]))
-      })
-
-      const tx = await writeContractAsync({
-        address: addr,
-        abi: nftAbi,
-        functionName: "addValidHashes",
-        args: [hashes],
-      })
-
-      setPairsInput("")
-      setOpen(false)
-      alert(`✅ Hashes added. Tx: ${tx}`)
-    } catch (err: any) {
-      alert(err.message || "Tx failed")
-    }
-  }
 
   const gradients = [
     "from-violet-500 to-purple-600",
@@ -728,7 +694,10 @@ href={`https://sepolia.basescan.org/address/${addr}`}
               </a>
               {collectionInfo && (
                 <button
-                  onClick={() => setShowCodes(!showCodes)}
+                  onClick={() => {
+                    setShowCodes(!showCodes)
+                    if (!showCodes) setShowAllCodes(false) // Reset to show only first 5 when opening
+                  }}
                   className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-400 hover:to-indigo-400 transition-all duration-300 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   {showCodes ? "Hide Codes" : "View Codes"}
@@ -736,24 +705,14 @@ href={`https://sepolia.basescan.org/address/${addr}`}
               )}
               {isOwner && (
                 <>
-                  <button
-                    onClick={() => setOpen(!open)}
-                    className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl hover:from-amber-300 hover:to-orange-400 transition-all duration-300 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  >
-                    {open ? "Cancel" : "Add Hashes"}
-                  </button>
-                  <Link href={`/generateHashes?address=${addr}`}>
-                    <button className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:from-emerald-400 hover:to-teal-400 transition-all duration-300 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                      Generate Hashes
-                    </button>
-                  </Link>
-                  <button
+                  {/* Temporarily commented out - Add to Frontend button */}
+                  {/* <button
                     onClick={handleAddToFrontend}
                     disabled={pushing}
                     className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:from-violet-500 hover:to-fuchsia-500 transition-all duration-300 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     {pushing ? "Sending…" : "Add to Frontend"}
-                  </button>
+                  </button> */}
                 </>
               )}
             </div>
@@ -782,7 +741,7 @@ href={`https://sepolia.basescan.org/address/${addr}`}
                     <h5 className="font-semibold text-blue-800 mb-2">📋 Generated Codes</h5>
                     <div className="space-y-1">
                       {collectionInfo.codes.length > 0 ? (
-                        collectionInfo.codes.slice(0, 5).map((code, i) => (
+                        (showAllCodes ? collectionInfo.codes : collectionInfo.codes.slice(0, 5)).map((code, i) => (
                           <div key={i} className="text-sm font-mono bg-white/60 px-2 py-1 rounded border">
                             {code}
                           </div>
@@ -790,8 +749,21 @@ href={`https://sepolia.basescan.org/address/${addr}`}
                       ) : (
                         <p className="text-sm text-blue-600">No codes available</p>
                       )}
-                      {collectionInfo.codes.length > 5 && (
-                        <p className="text-xs text-blue-500">... and {collectionInfo.codes.length - 5} more</p>
+                      {collectionInfo.codes.length > 5 && !showAllCodes && (
+                        <button
+                          onClick={() => setShowAllCodes(true)}
+                          className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition cursor-pointer"
+                        >
+                          ... and {collectionInfo.codes.length - 5} more
+                        </button>
+                      )}
+                      {showAllCodes && collectionInfo.codes.length > 5 && (
+                        <button
+                          onClick={() => setShowAllCodes(false)}
+                          className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition cursor-pointer"
+                        >
+                          Show less
+                        </button>
                       )}
                     </div>
                   </div>
@@ -816,32 +788,6 @@ href={`https://sepolia.basescan.org/address/${addr}`}
             </div>
           )}
 
-          {open && isOwner && (
-            <div className="pt-6 border-t border-gray-200/50">
-              <div className="space-y-4">
-                <label className="text-sm font-semibold text-gray-700 flex items-center space-x-2">
-                  <span className="w-2 h-2 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"></span>
-                  <span>Hash Array or Code,URI Pairs</span>
-                </label>
-                <textarea
-                  rows={4}
-                  value={pairsInput}
-                  onChange={(e) => setPairsInput(e.target.value)}
-                  placeholder="Paste hash array or code,uri pairs here"
-                  className="w-full border-2 border-gray-200 rounded-2xl p-4 text-sm font-mono bg-white/50 backdrop-blur-sm focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 transition-all duration-300"
-                />
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleAddHashes}
-                    disabled={isPending}
-                    className="px-8 py-3 bg-gradient-to-r from-gray-800 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-600 transition-all duration-300 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  >
-                    {isPending ? "Submitting…" : "Submit Hashes"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
