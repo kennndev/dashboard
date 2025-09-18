@@ -66,8 +66,8 @@ export default function HomePage() {
     )
   }
 
-  // Show collection type selection if not selected yet (only if authenticated)
-  if (authenticated && hasSelectedType === false) {
+  // Show collection type selection page for authenticated users
+  if (authenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 relative overflow-hidden">
         {/* Animated background */}
@@ -208,16 +208,8 @@ export default function HomePage() {
     )
   }
 
-  // If user has selected type, redirect to appropriate page
-  if (hasSelectedType === true) {
-    const collectionType = localStorage.getItem('collectionType')
-    if (collectionType === 'erc1155') {
-      router.push('/deploy-erc1155')
-    } else {
-      router.push('/deploy-erc721')
-    }
-    return <div className="min-h-screen flex items-center justify-center">Redirecting...</div>
-  }
+  // Show collection type selection page for authenticated users
+  // (removed automatic redirect to allow users to choose)
 
   return <div className="min-h-screen flex items-center justify-center">Loading...</div>
 }
