@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { usePrivy } from "@privy-io/react-auth"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import useSWR from 'swr'
 
 export default function HomePage() {
   const router = useRouter()
@@ -11,6 +12,13 @@ export default function HomePage() {
   const [hasSelectedType, setHasSelectedType] = useState<boolean | null>(null)
   
   const email = (user?.google?.email ?? user?.email?.address ?? '').toLowerCase()
+
+  // SWR hook for roles
+  const fetcher = (url: string) => fetch(url).then(r => r.json());
+  const { data: roles, isLoading: rolesLoading } = useSWR(
+    authenticated ? '/api/roles' : null,
+    fetcher
+  );
 
   // Check if user has selected collection type
   useEffect(() => {
@@ -22,13 +30,19 @@ export default function HomePage() {
     }
   }, [authenticated])
 
-  // Show loading while checking authentication and collection type
-  if (!ready || (authenticated && hasSelectedType === null)) {
+  // Check if user has proper role
+  const allowed = authenticated && roles?.some((r: { email: string }) => r.email.toLowerCase() === email);
+
+  // Show loading while checking authentication and roles
+  if (!ready || (authenticated && rolesLoading)) {
     return <div className="min-h-screen flex items-center justify-center">Loading…</div>
   }
 
-  // Show login if not authenticated
-  if (!authenticated) {
+  // Show login if not authenticated or not authorized
+  if (!authenticated || !allowed) {
+    if (authenticated && !allowed) {
+      logout(); // Log out if authenticated but not authorized
+    }
     return (
       <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 flex flex-col items-center justify-center space-y-6">
         <div className="text-center space-y-4">
@@ -52,8 +66,8 @@ export default function HomePage() {
     )
   }
 
-  // Show collection type selection if not selected yet
-  if (hasSelectedType === false) {
+  // Show collection type selection if not selected yet (only if authenticated)
+  if (authenticated && hasSelectedType === false) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 relative overflow-hidden">
         {/* Animated background */}
