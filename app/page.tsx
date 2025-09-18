@@ -17,6 +17,8 @@ export default function HomePage() {
     if (authenticated && typeof window !== 'undefined') {
       const collectionType = localStorage.getItem('collectionType')
       setHasSelectedType(!!collectionType)
+    } else if (!authenticated) {
+      setHasSelectedType(null) // Reset when not authenticated
     }
   }, [authenticated])
 
